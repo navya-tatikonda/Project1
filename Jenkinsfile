@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         SONARQUBE_SERVER = 'sonarqube'
-        DOCKER_IMAGE = 'cicd-demo:latest'
+        DOCKER_IMAGE = 'navyatatikonda7/cicd-demo:latest'
     }
 
     triggers {
@@ -55,9 +55,14 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Docker Build & Push') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE .'
+                withDockerRegistry(credentialsId: 'dockerhub', url: '') {
+                    sh '''
+                    docker build -t $DOCKER_IMAGE .
+                    docker push $DOCKER_IMAGE
+                    '''
+                }
             }
         }
 
@@ -74,7 +79,7 @@ pipeline {
             steps {
                 sh '''
                 docker rm -f cicd-demo || true
-                docker run -d --name cicd-demo $DOCKER_IMAGE
+                docker run -d --name cicd-demo -p 8081:8080 $DOCKER_IMAGE
                 '''
             }
         }
