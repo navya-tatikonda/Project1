@@ -72,7 +72,7 @@ pipeline {
             steps {
                 sh '''
                   export PATH=/opt/homebrew/bin:$PATH
-                  export TRIVY_DISABLE_DOCKER_CREDENTIALS=true
+                  export DOCKER_CONFIG=/tmp/jenkins-docker
                   trivy image --exit-code 0 --severity LOW,MEDIUM $DOCKER_IMAGE
                   trivy image --exit-code 1 --severity HIGH,CRITICAL $DOCKER_IMAGE
                 '''
