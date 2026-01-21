@@ -1,9 +1,9 @@
 pipeline {
     agent any
 
-    // Parameter to choose host port
+    // Parameter to choose host port dynamically
     parameters {
-        string(name: 'HOST_PORT', defaultValue: '9090', description: 'Host port to expose Spring Boot app')
+        string(name: 'HOST_PORT', defaultValue: '8081', description: 'Host port to expose Spring Boot app')
     }
 
     tools {
@@ -89,17 +89,26 @@ pipeline {
                 sh '''
                   export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
 
-                  # Remove old container if exists
+                  # Stop and remove any container named cicd-demo (to avoid port conflicts)
                   docker rm -f cicd-demo || true
 
-                  # Run new container using HOST_PORT parameter
+                  # Also remove any other container using the HOST_PORT dynamically
+                  OLD_CONTAINER=$(docker ps -q -f "publish=${HOST_PORT}")
+                  if [ ! -z "$OLD_CONTAINER" ]; then
+                    docker rm -f $OLD_CONTAINER
+                  fi
+
+                  # Run new container on the HOST_PORT parameter
                   docker run -d --name cicd-demo -p ${HOST_PORT}:8080 $DOCKER_IMAGE
 
                   # Wait for Spring Boot to start
+                  echo "Waiting for Spring Boot to start..."
                   sleep 10
 
-                  # Show last 20 log lines
+                  # Show last 20 log lines to verify app started
                   docker logs cicd-demo | tail -n 20
+
+                  echo "Your Spring Boot app should now be available at http://localhost:${HOST_PORT}/"
                 '''
             }
         }
