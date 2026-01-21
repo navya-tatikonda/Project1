@@ -9,6 +9,8 @@ pipeline {
     environment {
         SONARQUBE_SERVER = 'sonarqube'
         DOCKER_IMAGE = 'navyatatikonda7/cicd-demo:latest'
+        PATH = "/opt/homebrew/bin:/usr/local/bin/docker:${env.PATH}"
+        DOCKERHUB_USERNAME = "navyatatikonda7"
     }
 
     triggers {
@@ -19,16 +21,16 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                checkout scm
+                git branch: 'main',
+                url: 'https://github.com/navya-tatikonda/Project3.git'
             }
         }
 
-        stage('Build & Unit Test') {
+        stage('Build with Maven') {
             steps {
-                sh 'mvn clean test'
+                sh 'mvn clean package'
             }
         }
-
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube') {
@@ -36,7 +38,6 @@ pipeline {
                 }
             }
         }
-
         stage('OWASP Dependency Check') {
             steps {
                 sh '''
