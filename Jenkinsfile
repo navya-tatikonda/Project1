@@ -7,10 +7,7 @@ pipeline {
     }
 
     environment {
-        SONARQUBE_SERVER = 'sonarqube'
         DOCKER_IMAGE = 'navyatatikonda7/cicd-demo:latest'
-        PATH = "/opt/homebrew/bin:/usr/local/bin/docker:${env.PATH}"
-        DOCKERHUB_USERNAME = "navyatatikonda7"
     }
 
     triggers {
@@ -22,7 +19,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
-                url: 'https://github.com/navya-tatikonda/Project3.git'
+                    url: 'https://github.com/navya-tatikonda/Project3.git'
             }
         }
 
@@ -31,6 +28,7 @@ pipeline {
                 sh 'mvn clean package'
             }
         }
+
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube') {
@@ -38,50 +36,44 @@ pipeline {
                 }
             }
         }
+
         stage('OWASP Dependency Check') {
             steps {
                 sh '''
-                export PATH=/opt/homebrew/bin:$PATH
-                dependency-check \
-                --scan . \
-                --format HTML \
-                --out dependency-report \
-                --disableAssembly
+                  export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
+                  dependency-check \
+                    --scan . \
+                    --format HTML \
+                    --out dependency-report \
+                    --disableAssembly
                 '''
-            }
-        }
-
-        stage('Package JAR') {
-            steps {
-                sh 'mvn package'
             }
         }
 
         stage('Docker Build & Push') {
             steps {
-                withDockerRegistry(credentialsId: 'dockerhub', url: '') {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
                     sh '''
-                    docker build -t $DOCKER_IMAGE .
-                    docker push $DOCKER_IMAGE
+                      export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
+
+                      echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                      docker build -t $DOCKER_IMAGE .
+                      docker push $DOCKER_IMAGE
                     '''
                 }
             }
         }
-        stage('Trivy DB Update') {
-             steps {
-                 sh '''
-                 export PATH=/opt/homebrew/bin:$PATH
-                 trivy image --download-db-only
-           '''
-            }
-        }
-        
+
         stage('Trivy Scan') {
             steps {
                 sh '''
-                export PATH=/opt/homebrew/bin:$PATH
-                trivy image --exit-code 0 --severity LOW,MEDIUM $DOCKER_IMAGE
-                trivy image --exit-code 1 --severity HIGH,CRITICAL $DOCKER_IMAGE
+                  export PATH=/opt/homebrew/bin:$PATH
+                  trivy image --exit-code 0 --severity LOW,MEDIUM $DOCKER_IMAGE
+                  trivy image --exit-code 1 --severity HIGH,CRITICAL $DOCKER_IMAGE
                 '''
             }
         }
@@ -89,8 +81,9 @@ pipeline {
         stage('Deploy to Docker') {
             steps {
                 sh '''
-                docker rm -f cicd-demo || true
-                docker run -d --name cicd-demo -p 8081:8080 $DOCKER_IMAGE
+                  export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
+                  docker rm -f cicd-demo || true
+                  docker run -d --name cicd-demo -p 8081:8080 $DOCKER_IMAGE
                 '''
             }
         }
