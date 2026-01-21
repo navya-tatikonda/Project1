@@ -69,6 +69,9 @@ pipeline {
         }
 
         stage('Trivy Scan') {
+            environment {
+                TRIVY_DISABLE_DOCKER_CREDENTIALS = 'true'
+            }
             steps {
                 sh '''
                   export PATH=/opt/homebrew/bin:$PATH
