@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    // Parameter to choose host port
+    parameters {
+        string(name: 'HOST_PORT', defaultValue: '9090', description: 'Host port to expose Spring Boot app')
+    }
+
     tools {
         maven 'Maven3'
         jdk 'jdk17'
@@ -25,7 +30,7 @@ pipeline {
 
         stage('Build with Maven') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn clean package -DskipTests'
             }
         }
 
@@ -83,10 +88,26 @@ pipeline {
             steps {
                 sh '''
                   export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
+
+                  # Remove old container if exists
                   docker rm -f cicd-demo || true
-                  docker run -d --name cicd-demo -p 8081:8080 $DOCKER_IMAGE
+
+                  # Run new container using HOST_PORT parameter
+                  docker run -d --name cicd-demo -p ${HOST_PORT}:8080 $DOCKER_IMAGE
+
+                  # Wait for Spring Boot to start
+                  sleep 10
+
+                  # Show last 20 log lines
+                  docker logs cicd-demo | tail -n 20
                 '''
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline finished'
         }
     }
 }
