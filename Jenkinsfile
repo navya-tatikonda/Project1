@@ -41,7 +41,8 @@ pipeline {
         stage('OWASP Dependency Check') {
             steps {
                 sh '''
-                dependency-check.sh \
+                export PATH=/opt/homebrew/bin:$PATH
+                dependency-check \
                 --scan . \
                 --format HTML \
                 --out dependency-report \
@@ -66,10 +67,19 @@ pipeline {
                 }
             }
         }
-
+        stage('Trivy DB Update') {
+             steps {
+                 sh '''
+                 export PATH=/opt/homebrew/bin:$PATH
+                 trivy image --download-db-only
+           '''
+            }
+        }
+        
         stage('Trivy Scan') {
             steps {
                 sh '''
+                export PATH=/opt/homebrew/bin:$PATH
                 trivy image --exit-code 0 --severity LOW,MEDIUM $DOCKER_IMAGE
                 trivy image --exit-code 1 --severity HIGH,CRITICAL $DOCKER_IMAGE
                 '''
