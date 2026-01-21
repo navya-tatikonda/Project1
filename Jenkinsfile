@@ -69,12 +69,10 @@ pipeline {
         }
 
         stage('Trivy Scan') {
-            environment {
-                TRIVY_DISABLE_DOCKER_CREDENTIALS = 'true'
-            }
             steps {
                 sh '''
                   export PATH=/opt/homebrew/bin:$PATH
+                  export TRIVY_DISABLE_DOCKER_CREDENTIALS=true
                   trivy image --exit-code 0 --severity LOW,MEDIUM $DOCKER_IMAGE
                   trivy image --exit-code 1 --severity HIGH,CRITICAL $DOCKER_IMAGE
                 '''
