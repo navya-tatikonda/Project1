@@ -16,6 +16,6 @@ public class App {
 class MyController {
     @GetMapping("/")
     public String hello() {
-        return "<h1>Hello CI/CD Pipeline!!!!..</h1>";
+        return "<h1>Hello from Jenkins + Maven + Docker</h1>";
     }
 }
